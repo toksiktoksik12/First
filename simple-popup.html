@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { width: 350px; padding: 15px; font-family: Arial; }
+    button { width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 5px; background: #1877f2; color: white; font-size: 16px; cursor: pointer; }
+    button:hover { background: #166fe5; }
+    #result { margin-top: 15px; padding: 10px; background: #f0f2f5; border-radius: 5px; }
+    .listing { background: white; margin: 5px 0; padding: 10px; border-radius: 5px; border-left: 3px solid #1877f2; }
+  </style>
+</head>
+<body>
+  <h2>🔄 Facebook Marketplace</h2>
+  <button id="extractBtn">🔍 استخراج الإعلانات</button>
+  <div id="result"></div>
+  
+  <script>
+    document.getElementById('extractBtn').onclick = async function() {
+      const btn = this;
+      const result = document.getElementById('result');
+      
+      btn.disabled = true;
+      btn.textContent = 'جاري الاستخراج...';
+      result.innerHTML = 'جاري الاستخراج...';
+      
+      try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        const response = await chrome.tabs.sendMessage(tab.id, { action: 'extractListings' });
+        
+        if (response && response.success) {
+          result.innerHTML = `<h3>تم استخراج ${response.count} إعلان:</h3>`;
+          
+          response.listings.forEach(listing => {
+            result.innerHTML += `
+              <div class="listing">
+                <strong>${listing.title}</strong><br>
+                السعر: ${listing.price}<br>
+                الصور: ${listing.images.length}<br>
+                <a href="${listing.url}" target="_blank">عرض الإعلان</a>
+              </div>
+            `;
+          });
+        } else {
+          result.innerHTML = 'فشل في الاستخراج';
+        }
+      } catch (error) {
+        result.innerHTML = `خطأ: ${error.message}`;
+      }
+      
+      btn.disabled = false;
+      btn.textContent = '🔍 استخراج الإعلانات';
+    };
+  </script>
+</body>
+</html>
