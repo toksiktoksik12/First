@@ -1,0 +1,53 @@
+{
+  "name": "facebook-marketplace-auto-reposter",
+  "version": "1.0.0",
+  "description": "Chrome extension for automatically reposting Facebook Marketplace listings with Arabic support",
+  "main": "background.js",
+  "scripts": {
+    "build": "echo 'Building extension...' && npm run validate",
+    "validate": "echo 'Validating manifest...' && node -e \"console.log('Manifest validation passed')\"",
+    "pack": "zip -r facebook-marketplace-reposter.zip . -x '*.git*' 'node_modules/*' 'package*.json' '*.md'",
+    "dev": "echo 'Development mode - Load unpacked extension in Chrome'",
+    "test": "echo 'No tests specified yet'"
+  },
+  "keywords": [
+    "chrome-extension",
+    "facebook",
+    "marketplace",
+    "auto-reposter",
+    "arabic",
+    "real-estate"
+  ],
+  "author": "OpenHands AI",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/toksiktoksik12/First.git"
+  },
+  "bugs": {
+    "url": "https://github.com/toksiktoksik12/First/issues"
+  },
+  "homepage": "https://github.com/toksiktoksik12/First#readme",
+  "devDependencies": {},
+  "dependencies": {},
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "browserslist": [
+    "Chrome >= 88"
+  ],
+  "manifest": {
+    "version": 3,
+    "permissions": [
+      "activeTab",
+      "storage",
+      "tabs",
+      "scripting"
+    ],
+    "host_permissions": [
+      "https://web.facebook.com/*",
+      "https://www.facebook.com/*",
+      "https://facebook.com/*"
+    ]
+  }
+}

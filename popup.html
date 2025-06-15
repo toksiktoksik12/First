@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إعادة نشر إعلانات فيسبوك ماركت بليس</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <img src="icons/icon32.png" alt="Logo" class="logo-img">
+                <h1>إعادة نشر الإعلانات</h1>
+            </div>
+            <div class="language-toggle">
+                <button id="langToggle" class="lang-btn">EN</button>
+            </div>
+        </div>
+
+        <!-- Status -->
+        <div class="status" id="status">
+            <div class="status-icon">ℹ️</div>
+            <div class="status-text">مرحباً! اضغط على "فتح ماركت بليس" للبدء</div>
+        </div>
+
+        <!-- Main Actions -->
+        <div class="actions">
+            <button id="openMarketplace" class="btn btn-primary">
+                <span class="btn-icon">🏪</span>
+                فتح ماركت بليس
+            </button>
+            
+            <button id="extractListings" class="btn btn-secondary" disabled>
+                <span class="btn-icon">📋</span>
+                استخراج الإعلانات
+            </button>
+        </div>
+
+        <!-- Listings Section -->
+        <div class="listings-section" id="listingsSection" style="display: none;">
+            <div class="section-header">
+                <h3>الإعلانات المستخرجة (<span id="listingsCount">0</span>)</h3>
+                <div class="controls">
+                    <button id="selectAll" class="btn-small">تحديد الكل</button>
+                    <button id="deselectAll" class="btn-small">إلغاء التحديد</button>
+                </div>
+            </div>
+            
+            <div class="listings-container" id="listingsContainer">
+                <!-- الإعلانات ستظهر هنا -->
+            </div>
+            
+            <div class="repost-controls">
+                <div class="delay-control">
+                    <label for="delayInput">الفاصل الزمني (ثانية):</label>
+                    <input type="number" id="delayInput" value="10" min="5" max="60">
+                </div>
+                
+                <button id="startRepost" class="btn btn-success" disabled>
+                    <span class="btn-icon">🚀</span>
+                    بدء إعادة النشر
+                </button>
+            </div>
+        </div>
+
+        <!-- Progress Section -->
+        <div class="progress-section" id="progressSection" style="display: none;">
+            <div class="progress-header">
+                <h3>جاري إعادة النشر...</h3>
+                <button id="stopRepost" class="btn btn-danger btn-small">إيقاف</button>
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+            
+            <div class="progress-info">
+                <span id="progressText">0 من 0</span>
+                <span id="progressPercent">0%</span>
+            </div>
+            
+            <div class="progress-log" id="progressLog">
+                <!-- سجل العمليات -->
+            </div>
+        </div>
+
+        <!-- Settings -->
+        <div class="settings" id="settings">
+            <details>
+                <summary>الإعدادات المتقدمة</summary>
+                <div class="settings-content">
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="autoScroll" checked>
+                            تمرير تلقائي لتحميل المزيد من الإعلانات
+                        </label>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <label>
+                            <input type="checkbox" id="skipImages">
+                            تخطي رفع الصور (أسرع)
+                        </label>
+                    </div>
+                    
+                    <div class="setting-item">
+                        <label for="maxListings">الحد الأقصى للإعلانات:</label>
+                        <input type="number" id="maxListings" value="20" min="1" max="50">
+                    </div>
+                </div>
+            </details>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <div class="version">الإصدار 1.0.0</div>
+            <div class="links">
+                <a href="#" id="helpLink">المساعدة</a>
+                <a href="#" id="aboutLink">حول</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">جاري التحميل...</div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

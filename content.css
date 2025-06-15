@@ -1,0 +1,292 @@
+/* Content Script Styles for Facebook Marketplace Auto Reposter */
+
+/* إخفاء عناصر الإضافة من الصفحة الأساسية */
+.fb-marketplace-reposter-hidden {
+    display: none !important;
+}
+
+/* تمييز الإعلانات المستخرجة */
+.fb-marketplace-reposter-extracted {
+    position: relative;
+    border: 2px solid #1877f2 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 2px 8px rgba(24, 119, 242, 0.2) !important;
+}
+
+.fb-marketplace-reposter-extracted::after {
+    content: "✓ تم الاستخراج";
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background: #1877f2;
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: bold;
+    z-index: 1000;
+}
+
+/* مؤشر التحميل */
+.fb-marketplace-reposter-loading {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: rgba(24, 119, 242, 0.9);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 10000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    animation: fb-reposter-pulse 1.5s infinite;
+}
+
+@keyframes fb-reposter-pulse {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 1; }
+}
+
+/* تمييز الحقول المملوءة */
+.fb-marketplace-reposter-filled {
+    background-color: #e3f2fd !important;
+    border-color: #1877f2 !important;
+}
+
+/* رسائل النجاح والخطأ */
+.fb-marketplace-reposter-message {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 10000;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    animation: fb-reposter-slide-down 0.3s ease-out;
+}
+
+.fb-marketplace-reposter-message.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.fb-marketplace-reposter-message.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+@keyframes fb-reposter-slide-down {
+    from {
+        transform: translateX(-50%) translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(-50%) translateY(0);
+        opacity: 1;
+    }
+}
+
+/* تحسين عرض الصور في النموذج */
+.fb-marketplace-reposter-image-preview {
+    max-width: 100px;
+    max-height: 100px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 2px solid #e9ecef;
+    margin: 5px;
+}
+
+/* تمييز الأزرار المضغوطة */
+.fb-marketplace-reposter-clicked {
+    background-color: #1877f2 !important;
+    color: white !important;
+    transform: scale(0.98);
+    transition: all 0.1s ease;
+}
+
+/* شريط التقدم للعمليات الطويلة */
+.fb-marketplace-reposter-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: rgba(24, 119, 242, 0.2);
+    z-index: 10000;
+}
+
+.fb-marketplace-reposter-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #1877f2, #42a5f5);
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+/* تحسين الرؤية في الوضع المظلم */
+@media (prefers-color-scheme: dark) {
+    .fb-marketplace-reposter-extracted {
+        border-color: #42a5f5 !important;
+        box-shadow: 0 2px 8px rgba(66, 165, 245, 0.3) !important;
+    }
+    
+    .fb-marketplace-reposter-extracted::after {
+        background: #42a5f5;
+    }
+    
+    .fb-marketplace-reposter-loading {
+        background: rgba(66, 165, 245, 0.9);
+    }
+    
+    .fb-marketplace-reposter-filled {
+        background-color: rgba(66, 165, 245, 0.1) !important;
+        border-color: #42a5f5 !important;
+    }
+}
+
+/* تحسينات للشاشات الصغيرة */
+@media (max-width: 768px) {
+    .fb-marketplace-reposter-loading {
+        top: 10px;
+        right: 10px;
+        font-size: 12px;
+        padding: 8px 12px;
+    }
+    
+    .fb-marketplace-reposter-message {
+        top: 10px;
+        font-size: 12px;
+        padding: 10px 16px;
+        max-width: 90%;
+    }
+}
+
+/* تأثيرات الانتقال */
+.fb-marketplace-reposter-fade-in {
+    animation: fb-reposter-fade-in 0.3s ease-in;
+}
+
+@keyframes fb-reposter-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.fb-marketplace-reposter-slide-up {
+    animation: fb-reposter-slide-up 0.3s ease-out;
+}
+
+@keyframes fb-reposter-slide-up {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* تحسين التباين للنصوص العربية */
+.fb-marketplace-reposter-arabic-text {
+    font-family: 'Segoe UI', 'Tahoma', 'Arial', sans-serif;
+    direction: rtl;
+    text-align: right;
+}
+
+/* تحسين عرض الأسعار */
+.fb-marketplace-reposter-price {
+    font-weight: bold;
+    color: #1877f2;
+    font-size: 1.1em;
+}
+
+/* تحسين عرض المواقع */
+.fb-marketplace-reposter-location {
+    color: #65676b;
+    font-size: 0.9em;
+}
+
+/* إخفاء العناصر غير المرغوب فيها أثناء الاستخراج */
+.fb-marketplace-reposter-extracting .fb-marketplace-reposter-distractions {
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+/* تمييز النماذج النشطة */
+.fb-marketplace-reposter-active-form {
+    outline: 2px solid #1877f2;
+    outline-offset: 2px;
+    border-radius: 8px;
+}
+
+/* تحسين عرض الصور المرفوعة */
+.fb-marketplace-reposter-uploaded-image {
+    border: 2px solid #28a745;
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.2);
+}
+
+/* رسائل التأكيد */
+.fb-marketplace-reposter-confirmation {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    z-index: 10001;
+    max-width: 400px;
+    text-align: center;
+}
+
+.fb-marketplace-reposter-confirmation h3 {
+    margin-bottom: 15px;
+    color: #1c1e21;
+}
+
+.fb-marketplace-reposter-confirmation p {
+    margin-bottom: 20px;
+    color: #65676b;
+    line-height: 1.4;
+}
+
+.fb-marketplace-reposter-confirmation-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.fb-marketplace-reposter-confirmation button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.fb-marketplace-reposter-confirmation .confirm {
+    background: #1877f2;
+    color: white;
+}
+
+.fb-marketplace-reposter-confirmation .cancel {
+    background: #e4e6ea;
+    color: #1c1e21;
+}
+
+/* خلفية التأكيد */
+.fb-marketplace-reposter-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+}

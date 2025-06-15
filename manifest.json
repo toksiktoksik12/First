@@ -1,0 +1,63 @@
+{
+  "manifest_version": 3,
+  "name": "Facebook Marketplace Auto Reposter",
+  "name_ar": "إعادة نشر إعلانات فيسبوك ماركت بليس",
+  "version": "1.0.0",
+  "description": "Automatically repost Facebook Marketplace listings with ease",
+  "description_ar": "إعادة نشر إعلانات فيسبوك ماركت بليس تلقائياً بسهولة",
+  
+  "permissions": [
+    "activeTab",
+    "storage",
+    "tabs",
+    "scripting"
+  ],
+  
+  "host_permissions": [
+    "https://web.facebook.com/*",
+    "https://www.facebook.com/*",
+    "https://facebook.com/*"
+  ],
+  
+  "background": {
+    "service_worker": "background.js"
+  },
+  
+  "content_scripts": [
+    {
+      "matches": [
+        "https://web.facebook.com/*",
+        "https://www.facebook.com/*",
+        "https://facebook.com/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_end"
+    }
+  ],
+  
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Facebook Marketplace Auto Reposter",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  
+  "web_accessible_resources": [
+    {
+      "resources": ["content.js", "popup.html"],
+      "matches": ["https://web.facebook.com/*", "https://www.facebook.com/*", "https://facebook.com/*"]
+    }
+  ]
+}
