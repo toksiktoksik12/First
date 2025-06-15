@@ -15,12 +15,16 @@ body {
 }
 
 .container {
-    width: 400px;
-    min-height: 500px;
+    width: 380px;
+    max-width: 380px;
+    min-width: 350px;
+    min-height: 450px;
+    max-height: 600px;
     background: white;
-    border-radius: 12px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     overflow: hidden;
+    position: relative;
 }
 
 /* Header */
@@ -493,13 +497,43 @@ body {
     background: #a8a8a8;
 }
 
-/* Responsive */
+/* تحسين العرض للنوافذ الصغيرة */
 @media (max-width: 450px) {
     .container {
-        width: 100vw;
-        height: 100vh;
-        border-radius: 0;
+        width: 350px;
+        min-height: 400px;
+        border-radius: 6px;
     }
+    
+    .header {
+        padding: 12px 15px;
+    }
+    
+    .logo h1 {
+        font-size: 14px;
+    }
+}
+
+/* إصلاح مشاكل العرض */
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 380px;
+    height: auto;
+    overflow-x: hidden;
+}
+
+/* تحسين التمرير */
+.listings-container {
+    max-height: 180px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.progress-log {
+    max-height: 100px;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 /* English Language Support */

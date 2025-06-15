@@ -59,10 +59,41 @@ const translations = {
 document.addEventListener('DOMContentLoaded', initializePopup);
 
 function initializePopup() {
+    // إصلاح مشاكل العرض
+    fixDisplayIssues();
+    
     setupEventListeners();
     updateLanguage();
     checkCurrentTab();
     loadSettings();
+}
+
+// إصلاح مشاكل العرض
+function fixDisplayIssues() {
+    // تعيين حجم النافذة
+    document.body.style.width = '380px';
+    document.body.style.height = 'auto';
+    document.body.style.margin = '0';
+    document.body.style.padding = '0';
+    document.body.style.overflowX = 'hidden';
+    
+    // إصلاح الحاوية الرئيسية
+    const container = document.querySelector('.container');
+    if (container) {
+        container.style.width = '380px';
+        container.style.maxWidth = '380px';
+        container.style.minWidth = '380px';
+        container.style.height = 'auto';
+        container.style.margin = '0';
+        container.style.padding = '0';
+    }
+    
+    // إخفاء الأقسام غير المطلوبة في البداية
+    const listingsSection = document.getElementById('listingsSection');
+    const progressSection = document.getElementById('progressSection');
+    
+    if (listingsSection) listingsSection.style.display = 'none';
+    if (progressSection) progressSection.style.display = 'none';
 }
 
 // إعداد مستمعي الأحداث
@@ -170,6 +201,7 @@ function displayListings(listings) {
     // إظهار القسم
     section.style.display = 'block';
     section.classList.add('fade-in');
+    section.classList.add('show');
     
     // تفعيل زر إعادة النشر
     updateRepostButton();
@@ -382,8 +414,11 @@ function showProgressSection(show) {
     
     if (show) {
         section.classList.add('fade-in');
+        section.classList.add('show');
         // مسح السجل السابق
         document.getElementById('progressLog').innerHTML = '';
+    } else {
+        section.classList.remove('show');
     }
 }
 
