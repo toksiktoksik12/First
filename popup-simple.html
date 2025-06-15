@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Facebook Marketplace Reposter - Simple</title>
+  <link rel="stylesheet" href="popup.css">
+  <style>
+    body {
+      width: 400px;
+      min-height: 300px;
+      padding: 15px;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    
+    .header h1 {
+      font-size: 18px;
+      margin: 0;
+      color: #fff;
+    }
+    
+    .header p {
+      font-size: 12px;
+      margin: 5px 0;
+      opacity: 0.8;
+    }
+    
+    .controls {
+      margin-bottom: 20px;
+    }
+    
+    button {
+      width: 100%;
+      padding: 12px;
+      margin: 5px 0;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    #extractBtn {
+      background: #4CAF50;
+      color: white;
+    }
+    
+    #extractBtn:hover {
+      background: #45a049;
+    }
+    
+    #extractBtn:disabled {
+      background: #cccccc;
+      cursor: not-allowed;
+    }
+    
+    #repostBtn {
+      background: #2196F3;
+      color: white;
+    }
+    
+    #repostBtn:hover {
+      background: #1976D2;
+    }
+    
+    #repostBtn:disabled {
+      background: #cccccc;
+      cursor: not-allowed;
+    }
+    
+    .status {
+      padding: 10px;
+      border-radius: 5px;
+      margin: 10px 0;
+      text-align: center;
+      font-weight: bold;
+    }
+    
+    .status.loading {
+      background: #fff3cd;
+      color: #856404;
+    }
+    
+    .status.success {
+      background: #d4edda;
+      color: #155724;
+    }
+    
+    .status.error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    
+    .status.warning {
+      background: #fff3cd;
+      color: #856404;
+    }
+    
+    #listings {
+      max-height: 200px;
+      overflow-y: auto;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 10px;
+    }
+    
+    .listing-item {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 5px;
+      padding: 10px;
+      margin: 5px 0;
+    }
+    
+    .listing-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+    }
+    
+    .listing-header input {
+      margin-left: 8px;
+    }
+    
+    .listing-details {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+    
+    .listing-details p {
+      margin: 3px 0;
+    }
+    
+    .listing-details a {
+      color: #ffeb3b;
+      text-decoration: none;
+    }
+    
+    .listing-details a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🔄 Facebook Marketplace Reposter</h1>
+    <p>إصدار مبسط للتشخيص v1.5.0</p>
+  </div>
+  
+  <div class="controls">
+    <button id="extractBtn">🔍 استخراج الإعلانات</button>
+    <button id="repostBtn" disabled>📤 إعادة النشر (قريباً)</button>
+  </div>
+  
+  <div id="status" class="status">
+    اضغط "استخراج الإعلانات" للبدء
+  </div>
+  
+  <div id="listings"></div>
+  
+  <script src="popup-simple.js"></script>
+</body>
+</html>
