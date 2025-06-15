@@ -59,6 +59,9 @@ const translations = {
 document.addEventListener('DOMContentLoaded', initializePopup);
 
 function initializePopup() {
+    // إخفاء شاشة التحميل أولاً
+    showLoading(false);
+    
     // إصلاح مشاكل العرض
     fixDisplayIssues();
     
@@ -66,6 +69,9 @@ function initializePopup() {
     updateLanguage();
     checkCurrentTab();
     loadSettings();
+    
+    // تحديث الحالة الأولية
+    updateStatus('info', 'مرحباً! اضغط على "فتح ماركت بليس" للبدء');
 }
 
 // إصلاح مشاكل العرض
@@ -91,9 +97,14 @@ function fixDisplayIssues() {
     // إخفاء الأقسام غير المطلوبة في البداية
     const listingsSection = document.getElementById('listingsSection');
     const progressSection = document.getElementById('progressSection');
+    const loadingOverlay = document.getElementById('loadingOverlay');
     
     if (listingsSection) listingsSection.style.display = 'none';
     if (progressSection) progressSection.style.display = 'none';
+    if (loadingOverlay) {
+        loadingOverlay.style.display = 'none';
+        loadingOverlay.classList.remove('show');
+    }
 }
 
 // إعداد مستمعي الأحداث
@@ -462,7 +473,15 @@ function updateStatus(type, message) {
 // إظهار/إخفاء شاشة التحميل
 function showLoading(show) {
     const overlay = document.getElementById('loadingOverlay');
-    overlay.style.display = show ? 'flex' : 'none';
+    if (overlay) {
+        if (show) {
+            overlay.classList.add('show');
+            overlay.style.display = 'flex';
+        } else {
+            overlay.classList.remove('show');
+            overlay.style.display = 'none';
+        }
+    }
 }
 
 // تبديل اللغة

@@ -190,12 +190,18 @@ body {
     right: 0 !important;
     bottom: 0 !important;
     background: rgba(255, 255, 255, 0.9) !important;
-    display: flex !important;
+    display: none !important;
     flex-direction: column !important;
     justify-content: center !important;
     align-items: center !important;
     gap: 10px !important;
     z-index: 1000 !important;
+    visibility: hidden !important;
+}
+
+.loading-overlay.show {
+    display: flex !important;
+    visibility: visible !important;
 }
 
 .loading-spinner {
