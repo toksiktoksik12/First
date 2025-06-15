@@ -32,35 +32,81 @@ async function extractListings() {
     // انتظار تحميل الصفحة
     await waitForPageLoad();
     
-    // البحث عن عناصر الإعلانات
+    // البحث عن عناصر الإعلانات مع logs مفصلة
+    console.log('🔍 البحث عن الإعلانات في الصفحة...');
+    
     const listingSelectors = [
       '[data-pagelet="MarketplaceSearchResults"] a[href*="/marketplace/item/"]',
-      '[role="main"] a[href*="/marketplace/item/"]',
-      'a[href*="/marketplace/item/"]'
+      '[role="main"] a[href*="/marketplace/item/"]', 
+      'a[href*="/marketplace/item/"]',
+      // selectors إضافية
+      '[data-testid="marketplace-listing"]',
+      '[role="article"]',
+      'div[style*="cursor: pointer"]'
     ];
     
     let listingElements = [];
-    for (const selector of listingSelectors) {
-      listingElements = document.querySelectorAll(selector);
-      if (listingElements.length > 0) break;
+    for (let i = 0; i < listingSelectors.length; i++) {
+      const selector = listingSelectors[i];
+      console.log(`🔎 محاولة ${i + 1}/${listingSelectors.length}: ${selector}`);
+      
+      const elements = document.querySelectorAll(selector);
+      console.log(`📋 عدد العناصر الموجودة: ${elements.length}`);
+      
+      if (elements.length > 0) {
+        listingElements = elements;
+        console.log(`✅ تم العثور على ${elements.length} عنصر باستخدام: ${selector}`);
+        break;
+      }
     }
     
-    console.log(`تم العثور على ${listingElements.length} إعلان`);
+    console.log(`📊 إجمالي الإعلانات الموجودة: ${listingElements.length}`);
     
     if (listingElements.length === 0) {
-      return { success: false, message: 'لم يتم العثور على إعلانات في الصفحة' };
+      console.log('⚠️ لم يتم العثور على إعلانات بالطرق العادية، محاولة البحث البديل...');
+      
+      // محاولة البحث عن أي روابط تحتوي على marketplace
+      const allLinks = document.querySelectorAll('a[href*="marketplace"]');
+      console.log(`🔗 عدد روابط marketplace الموجودة: ${allLinks.length}`);
+      
+      // محاولة البحث عن divs تحتوي على صور وأسعار
+      const possibleListings = document.querySelectorAll('div:has(img), [role="article"], [data-testid*="marketplace"]');
+      console.log(`📦 عدد العناصر المحتملة: ${possibleListings.length}`);
+      
+      if (allLinks.length === 0 && possibleListings.length === 0) {
+        // طباعة معلومات الصفحة للتشخيص
+        console.log('🔍 تشخيص الصفحة:');
+        console.log('📄 URL:', window.location.href);
+        console.log('📝 Title:', document.title);
+        console.log('🏷️ عدد العناصر الكلي:', document.querySelectorAll('*').length);
+        
+        return { success: false, message: 'لم يتم العثور على إعلانات في الصفحة - تأكد من أنك في صفحة Marketplace' };
+      }
+      
+      // استخدام الروابط كبديل
+      if (allLinks.length > 0) {
+        listingElements = allLinks;
+        console.log(`✅ تم العثور على ${allLinks.length} رابط marketplace كبديل`);
+      }
     }
     
     // استخراج بيانات كل إعلان
+    console.log(`🔄 بدء استخراج بيانات ${Math.min(listingElements.length, 20)} إعلان...`);
+    
     for (let i = 0; i < Math.min(listingElements.length, 20); i++) {
       const element = listingElements[i];
+      console.log(`📝 استخراج إعلان ${i + 1}/${Math.min(listingElements.length, 20)}...`);
+      
       try {
         const listing = await extractListingData(element);
-        if (listing) {
+        if (listing && listing.title) {
           window.extractedListings.push(listing);
+          console.log(`✅ تم استخراج إعلان: "${listing.title.substring(0, 30)}..."`);
+        } else {
+          console.warn(`⚠️ إعلان ${i + 1} فارغ أو غير صالح`);
         }
       } catch (error) {
-        console.error(`خطأ في استخراج الإعلان ${i}:`, error);
+        console.error(`❌ خطأ في استخراج الإعلان ${i + 1}:`, error);
       }
       
       // فاصل زمني قصير بين الإعلانات
@@ -86,6 +132,8 @@ async function extractListings() {
 // استخراج بيانات إعلان واحد
 async function extractListingData(element) {
   try {
+    console.log('📝 بدء استخراج بيانات إعلان...');
+    
     const listing = {
       id: Date.now() + Math.random(),
       title: '',
@@ -103,6 +151,7 @@ async function extractListingData(element) {
     }
     
     // البحث عن العنوان
+    console.log('🏷️ البحث عن العنوان...');
     const titleSelectors = [
       'span[dir="auto"]',
       '[data-testid="marketplace-listing-title"]',
@@ -114,6 +163,7 @@ async function extractListingData(element) {
       const titleElement = element.querySelector(selector);
       if (titleElement && titleElement.textContent.trim()) {
         listing.title = titleElement.textContent.trim();
+        console.log(`✅ تم العثور على العنوان: "${listing.title}"`);
         break;
       }
     }
