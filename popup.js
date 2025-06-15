@@ -167,8 +167,16 @@ async function extractListings() {
             return;
         }
         
-        // إرسال رسالة لاستخراج الإعلانات
-        const response = await chrome.tabs.sendMessage(tab.id, { action: 'extractListings' });
+        // إرسال رسالة لاستخراج الإعلانات مع معالجة الأخطاء
+        let response;
+        try {
+            response = await chrome.tabs.sendMessage(tab.id, { action: 'extractListings' });
+        } catch (error) {
+            console.error('Error sending extract message:', error);
+            updateStatus('error', 'فشل في التواصل مع الصفحة - تأكد من تحميل الصفحة');
+            showLoading(false);
+            return;
+        }
         
         if (response.success) {
             currentListings = response.listings || [];
@@ -368,12 +376,18 @@ async function startReposting() {
                     listingData.images = [];
                 }
                 
-                // إعادة النشر
-                const result = await chrome.runtime.sendMessage({
-                    action: 'repostListing',
-                    listing: listingData,
-                    delay: delay
-                });
+                // إعادة النشر مع معالجة الأخطاء
+                let result;
+                try {
+                    result = await chrome.runtime.sendMessage({
+                        action: 'repostListing',
+                        listing: listingData,
+                        delay: delay
+                    });
+                } catch (error) {
+                    console.error('Error sending repost message:', error);
+                    result = { success: false, error: 'فشل في التواصل مع background script' };
+                }
                 
                 if (result && result.success) {
                     addLogEntry('success', `✅ تم نشر: ${listing.title}`);

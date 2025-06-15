@@ -92,29 +92,58 @@ async function handleRepostListing(request, sender, sendResponse) {
       repostInProgress: true
     });
     
-    // انتظار تحميل الصفحة
-    await new Promise(resolve => {
-      chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
+    // انتظار تحميل الصفحة مع timeout
+    await new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        chrome.tabs.onUpdated.removeListener(listener);
+        reject(new Error('انتهت مهلة انتظار تحميل الصفحة'));
+      }, 15000); // 15 ثانية timeout
+      
+      function listener(tabId, info) {
         if (tabId === tab.id && info.status === 'complete') {
+          clearTimeout(timeout);
           chrome.tabs.onUpdated.removeListener(listener);
           setTimeout(resolve, 3000); // انتظار أطول للتأكد من تحميل العناصر
         }
-      });
+      }
+      
+      chrome.tabs.onUpdated.addListener(listener);
     });
+    
+    // التحقق من وجود التاب
+    const tabExists = await checkTabExists(tab.id);
+    if (!tabExists) {
+      sendResponse({ success: false, error: 'التاب لم يعد موجوداً' });
+      return;
+    }
     
     // حقن content script
-    await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      files: ['content.js']
-    });
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ['content.js']
+      });
+    } catch (error) {
+      console.error('Error injecting content script:', error);
+      sendResponse({ success: false, error: 'فشل في حقن السكريبت' });
+      return;
+    }
     
-    // إرسال بيانات الإعلان للنشر
-    const result = await chrome.tabs.sendMessage(tab.id, {
-      action: 'fillListingForm',
-      listing: listing
-    });
+    // انتظار قليل للتأكد من تحميل السكريبت
+    await new Promise(resolve => setTimeout(resolve, 1000));
     
-    sendResponse(result);
+    // إرسال بيانات الإعلان للنشر مع معالجة الأخطاء
+    try {
+      const result = await chrome.tabs.sendMessage(tab.id, {
+        action: 'fillListingForm',
+        listing: listing
+      });
+      
+      sendResponse(result);
+    } catch (error) {
+      console.error('Error sending message to tab:', error);
+      sendResponse({ success: false, error: 'فشل في التواصل مع التاب الجديد - تأكد من أن الصفحة محملة' });
+    }
     
     // لا نغلق التاب تلقائياً - نتركه للمستخدم
     // setTimeout(() => {
@@ -144,5 +173,16 @@ async function getFromStorage(key) {
   } catch (error) {
     console.error('Error reading from storage:', error);
     return null;
+  }
+}
+
+// التحقق من وجود التاب
+async function checkTabExists(tabId) {
+  try {
+    await chrome.tabs.get(tabId);
+    return true;
+  } catch (error) {
+    console.error('Tab does not exist:', tabId);
+    return false;
   }
 }
