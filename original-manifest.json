@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Facebook Marketplace - ORIGINAL",
+  "version": "1.0.0",
+  "description": "الإصدار الأساسي اللي كان شغال",
+  
+  "permissions": ["activeTab"],
+  "host_permissions": ["https://*.facebook.com/*"],
+  
+  "background": {
+    "service_worker": "background.js"
+  },
+  
+  "content_scripts": [
+    {
+      "matches": ["https://*.facebook.com/*"],
+      "js": ["original-content.js"]
+    }
+  ],
+  
+  "action": {
+    "default_popup": "original-popup.html"
+  },
+  
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png", 
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

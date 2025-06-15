@@ -152,26 +152,32 @@ async function extractListingData(element) {
     
     // البحث عن العنوان
     console.log('🏷️ البحث عن العنوان...');
-    const titleSelectors = [
-      'span[dir="auto"]',
-      '[data-testid="marketplace-listing-title"]',
-      'span',
-      'div span'
-    ];
     
-    for (const selector of titleSelectors) {
-      const titleElement = element.querySelector(selector);
-      if (titleElement && titleElement.textContent.trim()) {
-        const text = titleElement.textContent.trim();
-        // تجنب استخدام السعر كعنوان
-        if (!text.includes('ج.م') && !text.includes('جنيه') && !text.includes('EGP') && !/^[\d\s\,\.]+$/.test(text)) {
-          listing.title = text;
-          console.log(`✅ تم العثور على العنوان: "${listing.title}"`);
-          break;
-        } else {
-          console.log(`⚠️ تجاهل نص يبدو كسعر: "${text}"`);
-        }
+    // البحث في جميع النصوص الطويلة
+    const allSpans = element.querySelectorAll('span');
+    const possibleTitles = [];
+    
+    allSpans.forEach(span => {
+      const text = span.textContent.trim();
+      // العنوان يكون نص طويل وليس سعر
+      if (text.length > 15 && text.length < 200 && 
+          !text.includes('ج.م') && !text.includes('جنيه') && !text.includes('EGP') && 
+          !text.includes('Cairo') && !text.includes('Egypt') &&
+          !/^[\d\s\,\.]+$/.test(text) && !/^مجاني/.test(text)) {
+        possibleTitles.push(text);
       }
+    });
+    
+    // أخذ أطول نص كعنوان
+    if (possibleTitles.length > 0) {
+      listing.title = possibleTitles.sort((a, b) => b.length - a.length)[0];
+      console.log(`✅ تم العثور على العنوان: "${listing.title}"`);
+    } else {
+      // إذا مالقيناش عنوان، نستخدم جزء من الرابط
+      const urlParts = link.href.split('/');
+      const itemId = urlParts[urlParts.length - 2] || urlParts[urlParts.length - 1];
+      listing.title = `إعلان ${itemId}`;
+      console.log(`⚠️ لم يتم العثور على عنوان، استخدام: "${listing.title}"`);
     }
     
     // البحث عن السعر مع تنظيف

@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "Facebook Debug Tool",
+  "version": "1.0.0",
+  "description": "أداة تشخيص لمعرفة ما يحدث في صفحة Facebook",
+  
+  "permissions": [
+    "activeTab",
+    "tabs"
+  ],
+  
+  "host_permissions": [
+    "https://web.facebook.com/*",
+    "https://facebook.com/*",
+    "https://*.facebook.com/*"
+  ],
+  
+  "background": {
+    "service_worker": "background.js"
+  },
+  
+  "content_scripts": [
+    {
+      "matches": [
+        "https://web.facebook.com/*",
+        "https://facebook.com/*"
+      ],
+      "js": ["debug-simple.js"],
+      "run_at": "document_end"
+    }
+  ],
+  
+  "action": {
+    "default_popup": "popup-debug.html",
+    "default_title": "Facebook Debug Tool"
+  }
+}

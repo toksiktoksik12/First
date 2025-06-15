@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Facebook Marketplace - DEBUG",
+  "version": "6.0.0",
+  "description": "تشخيص المشكلة",
+  
+  "permissions": ["activeTab"],
+  "host_permissions": ["https://*.facebook.com/*"],
+  
+  "background": {
+    "service_worker": "background.js"
+  },
+  
+  "content_scripts": [
+    {
+      "matches": ["https://*.facebook.com/*"],
+      "js": ["debug-content.js"]
+    }
+  ],
+  
+  "action": {
+    "default_popup": "debug-popup.html"
+  }
+}

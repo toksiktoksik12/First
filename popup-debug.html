@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>Facebook Debug</title>
+  <style>
+    body {
+      width: 500px;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: #2c3e50;
+      color: white;
+    }
+    
+    h1 {
+      text-align: center;
+      margin: 0 0 20px 0;
+      font-size: 18px;
+      color: #e74c3c;
+    }
+    
+    button {
+      width: 100%;
+      padding: 15px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      background: #e74c3c;
+      color: white;
+    }
+    
+    button:hover {
+      background: #c0392b;
+    }
+    
+    #results {
+      background: #34495e;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 15px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+    
+    .stat {
+      background: #1abc9c;
+      color: white;
+      padding: 8px;
+      margin: 5px 0;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+    
+    .error {
+      background: #e74c3c;
+      color: white;
+      padding: 10px;
+      border-radius: 4px;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 Facebook Page Debugger</h1>
+  
+  <button id="analyzeBtn">🔍 تحليل الصفحة</button>
+  
+  <div id="results">اضغط "تحليل الصفحة" لمعرفة ما يحدث...</div>
+  
+  <script>
+    document.getElementById('analyzeBtn').addEventListener('click', async function() {
+      const btn = this;
+      const results = document.getElementById('results');
+      
+      btn.disabled = true;
+      btn.textContent = 'جاري التحليل...';
+      results.innerHTML = 'جاري تحليل الصفحة...';
+      
+      try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        
+        if (!tab.url.includes('facebook.com')) {
+          throw new Error('يجب أن تكون في صفحة Facebook');
+        }
+        
+        const response = await chrome.tabs.sendMessage(tab.id, { action: 'analyze' });
+        
+        if (response && response.success) {
+          const analysis = response.analysis;
+          
+          results.innerHTML = `
+            <div class="stat">
+              <span>📍 الرابط:</span>
+              <span>${analysis.url}</span>
+            </div>
+            <div class="stat">
+              <span>🔗 إجمالي الروابط:</span>
+              <span>${analysis.totalLinks}</span>
+            </div>
+            <div class="stat">
+              <span>🏪 روابط Marketplace:</span>
+              <span>${analysis.marketplaceLinks}</span>
+            </div>
+            <div class="stat">
+              <span>📦 روابط Item:</span>
+              <span>${analysis.itemLinks}</span>
+            </div>
+            <div class="stat">
+              <span>🎯 روابط الإعلانات المحددة:</span>
+              <span>${analysis.specificLinks}</span>
+            </div>
+            <div class="stat">
+              <span>📊 حاويات الإعلانات المحتملة:</span>
+              <span>${analysis.possibleAds}</span>
+            </div>
+            <div class="stat">
+              <span>🖼️ الصور:</span>
+              <span>${analysis.images}</span>
+            </div>
+            <div class="stat">
+              <span>💰 نصوص الأسعار:</span>
+              <span>${analysis.priceTexts}</span>
+            </div>
+            
+            <div style="margin-top: 20px; padding: 10px; background: #2c3e50; border-radius: 4px;">
+              <strong>📋 التشخيص:</strong><br>
+              ${analysis.specificLinks > 0 ? 
+                `✅ تم العثور على ${analysis.specificLinks} إعلان - الصفحة تحتوي على إعلانات` :
+                `❌ لم يتم العثور على إعلانات - تأكد من أنك في صفحة البحث الصحيحة`
+              }
+            </div>
+            
+            <div style="margin-top: 10px; padding: 10px; background: #34495e; border-radius: 4px; font-size: 11px;">
+              <strong>💡 نصائح:</strong><br>
+              • تأكد من أنك في صفحة: web.facebook.com/marketplace/cairo/propertyforsale<br>
+              • تأكد من تحميل الصفحة بالكامل<br>
+              • جرب التمرير لأسفل لتحميل المزيد من الإعلانات<br>
+              • افتح Console (F12) لمزيد من التفاصيل
+            </div>
+          `;
+        } else {
+          throw new Error('فشل في تحليل الصفحة');
+        }
+        
+      } catch (error) {
+        results.innerHTML = `<div class="error">❌ خطأ: ${error.message}</div>`;
+      }
+      
+      btn.disabled = false;
+      btn.textContent = '🔍 تحليل الصفحة';
+    });
+  </script>
+</body>
+</html>
