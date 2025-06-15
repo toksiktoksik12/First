@@ -118,39 +118,69 @@ async function extractListingData(element) {
       }
     }
     
-    // البحث عن السعر
+    // البحث عن السعر مع تنظيف
+    console.log('💰 البحث عن السعر...');
     const priceSelectors = [
       'span[dir="auto"]:not(:first-child)',
       '[data-testid="marketplace-listing-price"]',
-      'span[style*="font-weight"]'
+      'span[style*="font-weight"]',
+      'span:contains("جنيه")',
+      'span:contains("EGP")',
+      'span:contains("ج.م")'
     ];
     
     for (const selector of priceSelectors) {
       const priceElements = element.querySelectorAll(selector);
       for (const priceElement of priceElements) {
         const text = priceElement.textContent.trim();
+        console.log(`🔍 فحص نص: "${text}"`);
+        
         if (text.includes('جنيه') || text.includes('EGP') || text.includes('ج.م') || /\d+/.test(text)) {
-          listing.price = text;
-          break;
+          // تنظيف السعر من الأحرف الغريبة
+          let cleanPrice = text
+            .replace(/[^\d\u0660-\u0669\u06F0-\u06F9.,]/g, '') // إبقاء الأرقام العربية والإنجليزية والفواصل فقط
+            .replace(/[\u0660-\u0669]/g, (d) => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)) // تحويل الأرقام العربية لإنجليزية
+            .replace(/[\u06F0-\u06F9]/g, (d) => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)) // تحويل الأرقام الفارسية
+            .replace(/,+/g, ',') // إزالة الفواصل المتكررة
+            .replace(/^,|,$/g, ''); // إزالة الفواصل من البداية والنهاية
+          
+          if (cleanPrice && /\d/.test(cleanPrice)) {
+            listing.price = cleanPrice;
+            console.log(`✅ تم استخراج السعر: "${listing.price}"`);
+            break;
+          }
         }
       }
       if (listing.price) break;
     }
     
-    // البحث عن الصور
+    // البحث عن جميع الصور
+    console.log('🖼️ البحث عن الصور...');
     const imageSelectors = [
       'img[src*="scontent"]',
-      'img[src*="fbcdn"]',
+      'img[src*="fbcdn"]', 
+      'img[src*="facebook"]',
       'img'
     ];
     
+    // جمع كل الصور من جميع الـ selectors
+    const foundImages = new Set(); // لتجنب التكرار
+    
     for (const selector of imageSelectors) {
-      const imgElement = element.querySelector(selector);
-      if (imgElement && imgElement.src && !imgElement.src.includes('data:')) {
-        listing.images.push(imgElement.src);
-        break;
-      }
+      const imgElements = element.querySelectorAll(selector); // querySelectorAll بدلاً من querySelector
+      imgElements.forEach(imgElement => {
+        if (imgElement && imgElement.src && 
+            !imgElement.src.includes('data:') && 
+            !imgElement.src.includes('static') &&
+            imgElement.src.startsWith('http')) {
+          foundImages.add(imgElement.src);
+        }
+      });
     }
+    
+    // تحويل Set إلى Array وإضافة للإعلان
+    listing.images = Array.from(foundImages);
+    console.log(`📸 تم العثور على ${listing.images.length} صورة`);
     
     // البحث عن الموقع
     const locationSelectors = [
@@ -245,20 +275,36 @@ async function fillListingForm(listing) {
     
     await sleep(1000);
     
-    // ملء السعر
+    // ملء السعر مع تنظيف أفضل
     if (listing.price) {
-      const priceValue = listing.price.replace(/[^\d]/g, '');
-      if (priceValue) {
+      // تنظيف السعر - إبقاء الأرقام والفواصل فقط
+      const priceValue = listing.price
+        .replace(/[^\d.,]/g, '') // إبقاء الأرقام والفواصل فقط
+        .replace(/,+/g, '') // إزالة الفواصل
+        .replace(/\.+/g, '.'); // إبقاء نقطة واحدة فقط
+      
+      if (priceValue && /\d/.test(priceValue)) {
         console.log('💰 ملء السعر:', priceValue);
-        await fillField([
+        
+        // selectors محددة للسعر فقط
+        const priceSelectors = [
           'input[placeholder*="price"]',
-          'input[placeholder*="سعر"]',
+          'input[placeholder*="سعر"]', 
           'input[placeholder*="Price"]',
-          '[data-testid="marketplace-composer-price-input"]',
+          'input[placeholder*="amount"]',
+          'input[placeholder*="مبلغ"]',
+          '[data-testid*="price"]',
           '[aria-label*="price"]',
           '[aria-label*="سعر"]',
           'input[type="number"]:not([readonly]):not([disabled])'
-        ], priceValue);
+        ];
+        
+        const success = await fillField(priceSelectors, priceValue);
+        if (!success) {
+          console.warn('⚠️ لم يتم العثور على حقل السعر');
+        }
+      } else {
+        console.warn('⚠️ السعر غير صالح:', listing.price);
       }
     }
     
@@ -281,7 +327,10 @@ async function fillListingForm(listing) {
     
     // رفع الصور
     if (listing.images && listing.images.length > 0) {
+      console.log(`📸 رفع ${listing.images.length} صورة...`);
       await uploadImages(listing.images);
+    } else {
+      console.warn('⚠️ لا توجد صور للرفع');
     }
     
     await sleep(2000);
@@ -358,21 +407,24 @@ async function fillField(selectors, value) {
     }
   }
   
-  // إذا لم نجد أي حقل، نحاول البحث بطريقة أخرى
+  // إذا لم نجد أي حقل، نحاول البحث بطريقة أخرى (لكن بحذر)
   console.log('🔄 محاولة البحث بطريقة بديلة...');
   const allVisibleInputs = Array.from(document.querySelectorAll('input, textarea'))
     .filter(el => el.offsetParent !== null && !el.disabled && !el.readOnly);
   
   console.log(`📋 عدد الحقول المرئية: ${allVisibleInputs.length}`);
   
-  if (allVisibleInputs.length > 0) {
-    console.log('🎯 محاولة استخدام أول حقل مرئي...');
+  // لا نستخدم الحقل البديل للسعر لتجنب الخلط
+  if (allVisibleInputs.length > 0 && !value.match(/^\d+[.,]?\d*$/)) {
+    console.log('🎯 محاولة استخدام أول حقل مرئي (ليس رقم)...');
     const firstInput = allVisibleInputs[0];
     console.log(`📝 استخدام: ${firstInput.tagName} - placeholder: "${firstInput.placeholder}"`);
     
     await fillFieldElement(firstInput, value);
     console.log(`✅ تم ملء الحقل البديل بنجاح`);
     return true;
+  } else if (value.match(/^\d+[.,]?\d*$/)) {
+    console.log('⚠️ تجنب استخدام الحقل البديل للأرقام لمنع الخلط');
   }
   
   console.warn('❌ لم يتم العثور على أي حقل مناسب:', selectors, 'للقيمة:', value);
@@ -448,18 +500,23 @@ async function uploadImages(imageUrls) {
       return;
     }
     
-    // تحميل الصور وتحويلها إلى ملفات
+    // تحميل الصور وتحويلها إلى ملفات (كل الصور)
+    console.log(`📥 تحميل ${imageUrls.length} صورة...`);
     const files = [];
-    for (let i = 0; i < Math.min(imageUrls.length, 5); i++) {
+    for (let i = 0; i < Math.min(imageUrls.length, 10); i++) { // زيادة العدد إلى 10
       try {
+        console.log(`📥 تحميل صورة ${i + 1}/${imageUrls.length}: ${imageUrls[i].substring(0, 50)}...`);
         const file = await downloadImageAsFile(imageUrls[i], `image_${i}.jpg`);
         if (file) {
           files.push(file);
+          console.log(`✅ تم تحميل صورة ${i + 1} بنجاح`);
         }
       } catch (error) {
-        console.error(`خطأ في تحميل الصورة ${i}:`, error);
+        console.error(`❌ خطأ في تحميل الصورة ${i + 1}:`, error);
       }
     }
+    
+    console.log(`📸 تم تحميل ${files.length} صورة من أصل ${imageUrls.length}`);
     
     if (files.length > 0) {
       // إنشاء FileList
