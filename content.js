@@ -162,9 +162,15 @@ async function extractListingData(element) {
     for (const selector of titleSelectors) {
       const titleElement = element.querySelector(selector);
       if (titleElement && titleElement.textContent.trim()) {
-        listing.title = titleElement.textContent.trim();
-        console.log(`✅ تم العثور على العنوان: "${listing.title}"`);
-        break;
+        const text = titleElement.textContent.trim();
+        // تجنب استخدام السعر كعنوان
+        if (!text.includes('ج.م') && !text.includes('جنيه') && !text.includes('EGP') && !/^[\d\s\,\.]+$/.test(text)) {
+          listing.title = text;
+          console.log(`✅ تم العثور على العنوان: "${listing.title}"`);
+          break;
+        } else {
+          console.log(`⚠️ تجاهل نص يبدو كسعر: "${text}"`);
+        }
       }
     }
     
@@ -174,9 +180,7 @@ async function extractListingData(element) {
       'span[dir="auto"]:not(:first-child)',
       '[data-testid="marketplace-listing-price"]',
       'span[style*="font-weight"]',
-      'span:contains("جنيه")',
-      'span:contains("EGP")',
-      'span:contains("ج.م")'
+      'span'
     ];
     
     for (const selector of priceSelectors) {
@@ -185,7 +189,7 @@ async function extractListingData(element) {
         const text = priceElement.textContent.trim();
         console.log(`🔍 فحص نص: "${text}"`);
         
-        if (text.includes('جنيه') || text.includes('EGP') || text.includes('ج.م') || /\d+/.test(text)) {
+        if (text.includes('جنيه') || text.includes('EGP') || text.includes('ج.م') || /^[\d\s\,\.]+$/.test(text)) {
           // تنظيف السعر من الأحرف الغريبة
           let cleanPrice = text
             .replace(/[^\d\u0660-\u0669\u06F0-\u06F9.,]/g, '') // إبقاء الأرقام العربية والإنجليزية والفواصل فقط
