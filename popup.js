@@ -375,10 +375,11 @@ async function startReposting() {
                     delay: delay
                 });
                 
-                if (result.success) {
-                    addLogEntry('success', `تم نشر: ${listing.title}`);
+                if (result && result.success) {
+                    addLogEntry('success', `✅ تم نشر: ${listing.title}`);
                 } else {
-                    addLogEntry('error', `فشل نشر: ${listing.title} - ${result.error}`);
+                    const errorMsg = result?.error || result?.message || 'خطأ غير معروف';
+                    addLogEntry('error', `❌ فشل نشر: ${listing.title} - ${errorMsg}`);
                 }
                 
                 updateProgress(i + 1, repostQueue.length);

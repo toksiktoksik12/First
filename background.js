@@ -79,10 +79,17 @@ async function handleRepostListing(request, sender, sendResponse) {
   try {
     const { listing, delay } = request;
     
-    // فتح صفحة بيع جديدة
+    // فتح صفحة بيع جديدة (مرئية للمستخدم)
     const tab = await chrome.tabs.create({
       url: 'https://web.facebook.com/marketplace/create/item',
-      active: false
+      active: true  // جعل التاب مرئي
+    });
+    
+    // حفظ معلومات الإعلان في storage للوصول إليها من التاب الجديد
+    await chrome.storage.local.set({
+      currentListing: listing,
+      repostTabId: tab.id,
+      repostInProgress: true
     });
     
     // انتظار تحميل الصفحة
@@ -90,12 +97,12 @@ async function handleRepostListing(request, sender, sendResponse) {
       chrome.tabs.onUpdated.addListener(function listener(tabId, info) {
         if (tabId === tab.id && info.status === 'complete') {
           chrome.tabs.onUpdated.removeListener(listener);
-          setTimeout(resolve, 2000); // انتظار إضافي للتأكد من تحميل العناصر
+          setTimeout(resolve, 3000); // انتظار أطول للتأكد من تحميل العناصر
         }
       });
     });
     
-    // حقن content script وإعادة النشر
+    // حقن content script
     await chrome.scripting.executeScript({
       target: { tabId: tab.id },
       files: ['content.js']
@@ -109,10 +116,10 @@ async function handleRepostListing(request, sender, sendResponse) {
     
     sendResponse(result);
     
-    // إغلاق التبويب بعد فترة
-    setTimeout(() => {
-      chrome.tabs.remove(tab.id);
-    }, delay || 5000);
+    // لا نغلق التاب تلقائياً - نتركه للمستخدم
+    // setTimeout(() => {
+    //   chrome.tabs.remove(tab.id);
+    // }, delay || 5000);
     
   } catch (error) {
     console.error('Error reposting listing:', error);

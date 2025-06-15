@@ -192,21 +192,29 @@ async function fillListingForm(listing) {
     await waitForElement('input[placeholder*="title"], input[placeholder*="عنوان"], [data-testid="marketplace-composer-title-input"]', 10000);
     
     // ملء العنوان
+    console.log('📝 ملء العنوان:', listing.title);
     await fillField([
       'input[placeholder*="title"]',
       'input[placeholder*="عنوان"]',
+      'input[placeholder*="Title"]',
       '[data-testid="marketplace-composer-title-input"]',
-      'input[type="text"]:first-of-type'
+      '[aria-label*="title"]',
+      '[aria-label*="عنوان"]',
+      'input[type="text"]:first-of-type:not([readonly]):not([disabled])'
     ], listing.title);
     
     await sleep(1000);
     
     // ملء الوصف
+    console.log('📝 ملء الوصف:', listing.description?.substring(0, 50) + '...');
     await fillField([
       'textarea[placeholder*="description"]',
       'textarea[placeholder*="وصف"]',
+      'textarea[placeholder*="Description"]',
       '[data-testid="marketplace-composer-description-input"]',
-      'textarea'
+      '[aria-label*="description"]',
+      '[aria-label*="وصف"]',
+      'textarea:not([readonly]):not([disabled])'
     ], listing.description);
     
     await sleep(1000);
@@ -215,11 +223,15 @@ async function fillListingForm(listing) {
     if (listing.price) {
       const priceValue = listing.price.replace(/[^\d]/g, '');
       if (priceValue) {
+        console.log('💰 ملء السعر:', priceValue);
         await fillField([
           'input[placeholder*="price"]',
           'input[placeholder*="سعر"]',
+          'input[placeholder*="Price"]',
           '[data-testid="marketplace-composer-price-input"]',
-          'input[type="number"]'
+          '[aria-label*="price"]',
+          '[aria-label*="سعر"]',
+          'input[type="number"]:not([readonly]):not([disabled])'
         ], priceValue);
       }
     }
@@ -228,10 +240,14 @@ async function fillListingForm(listing) {
     
     // ملء الموقع
     if (listing.location) {
+      console.log('📍 ملء الموقع:', listing.location);
       await fillField([
         'input[placeholder*="location"]',
         'input[placeholder*="موقع"]',
-        '[data-testid="marketplace-composer-location-input"]'
+        'input[placeholder*="Location"]',
+        '[data-testid="marketplace-composer-location-input"]',
+        '[aria-label*="location"]',
+        '[aria-label*="موقع"]'
       ], listing.location);
     }
     
@@ -245,9 +261,21 @@ async function fillListingForm(listing) {
     await sleep(2000);
     
     // النقر على زر النشر
-    await clickPublishButton();
+    const publishClicked = await clickPublishButton();
     
-    return { success: true, message: 'تم نشر الإعلان بنجاح' };
+    if (!publishClicked) {
+      return { success: false, message: 'لم يتم العثور على زر النشر' };
+    }
+    
+    // انتظار والتحقق من نجاح النشر
+    await sleep(3000);
+    const publishSuccess = await verifyPublishSuccess();
+    
+    if (publishSuccess) {
+      return { success: true, message: 'تم نشر الإعلان بنجاح ✅' };
+    } else {
+      return { success: false, message: 'فشل في نشر الإعلان - يرجى المحاولة يدوياً' };
+    }
     
   } catch (error) {
     console.error('خطأ في ملء النموذج:', error);
@@ -257,30 +285,87 @@ async function fillListingForm(listing) {
 
 // ملء حقل نص
 async function fillField(selectors, value) {
-  if (!value) return;
+  if (!value) return false;
   
+  // محاولة الـ selectors العادية أولاً
   for (const selector of selectors) {
     const element = document.querySelector(selector);
-    if (element) {
-      // مسح المحتوى الحالي
-      element.focus();
-      element.select();
-      document.execCommand('delete');
-      
-      // كتابة القيمة الجديدة
-      element.value = value;
-      
-      // إطلاق الأحداث
-      element.dispatchEvent(new Event('input', { bubbles: true }));
-      element.dispatchEvent(new Event('change', { bubbles: true }));
-      
-      console.log(`تم ملء الحقل: ${selector} = ${value}`);
+    if (element && element.offsetParent !== null) { // التأكد من أن العنصر مرئي
+      await fillFieldElement(element, value);
+      console.log(`✅ تم ملء الحقل: ${selector} = ${value}`);
       return true;
     }
   }
   
-  console.warn('لم يتم العثور على الحقل:', selectors);
+  // محاولة البحث بـ XPath للحقول الشائعة
+  const xpathQueries = [
+    "//input[contains(@placeholder, 'title') or contains(@placeholder, 'عنوان')]",
+    "//textarea[contains(@placeholder, 'description') or contains(@placeholder, 'وصف')]", 
+    "//input[@type='number' or contains(@placeholder, 'price') or contains(@placeholder, 'سعر')]",
+    "//input[contains(@placeholder, 'location') or contains(@placeholder, 'موقع')]",
+    "//input[@type='text' and not(@readonly) and not(@disabled)]",
+    "//textarea[not(@readonly) and not(@disabled)]"
+  ];
+  
+  for (const xpath of xpathQueries) {
+    const element = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+    if (element && element.offsetParent !== null) {
+      await fillFieldElement(element, value);
+      console.log(`✅ تم ملء الحقل بـ XPath: ${value}`);
+      return true;
+    }
+  }
+  
+  console.warn('❌ لم يتم العثور على الحقل:', selectors, 'للقيمة:', value);
   return false;
+}
+
+// ملء عنصر حقل محدد بطريقة متقدمة
+async function fillFieldElement(element, value) {
+  // التركيز على الحقل
+  element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  await sleep(200);
+  
+  element.focus();
+  element.click();
+  await sleep(100);
+  
+  // مسح المحتوى الحالي بطرق متعددة
+  element.value = '';
+  element.textContent = '';
+  
+  // محاولة مسح بـ Ctrl+A و Delete
+  element.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', ctrlKey: true, bubbles: true }));
+  await sleep(50);
+  element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Delete', bubbles: true }));
+  await sleep(50);
+  
+  // كتابة النص حرف بحرف (محاكاة الكتابة الطبيعية)
+  for (let i = 0; i < value.length; i++) {
+    const char = value[i];
+    
+    // إضافة الحرف للقيمة
+    element.value += char;
+    
+    // إطلاق أحداث الكتابة
+    element.dispatchEvent(new KeyboardEvent('keydown', { key: char, bubbles: true }));
+    element.dispatchEvent(new KeyboardEvent('keypress', { key: char, bubbles: true }));
+    element.dispatchEvent(new Event('input', { 
+      bubbles: true, 
+      inputType: 'insertText', 
+      data: char 
+    }));
+    element.dispatchEvent(new KeyboardEvent('keyup', { key: char, bubbles: true }));
+    
+    // تأخير صغير بين الأحرف لمحاكاة الكتابة الطبيعية
+    await sleep(30 + Math.random() * 20);
+  }
+  
+  // إطلاق أحداث التغيير النهائية
+  element.dispatchEvent(new Event('change', { bubbles: true }));
+  element.dispatchEvent(new Event('blur', { bubbles: true }));
+  
+  await sleep(200);
 }
 
 // رفع الصور
@@ -348,38 +433,129 @@ async function downloadImageAsFile(url, filename) {
 
 // النقر على زر النشر
 async function clickPublishButton() {
+  console.log('🔍 البحث عن زر النشر...');
+  
+  // قائمة محسنة من selectors
   const publishSelectors = [
     'button[type="submit"]',
-    'button:contains("نشر")',
-    'button:contains("Publish")',
     '[data-testid="marketplace-composer-publish-button"]',
+    '[data-testid="marketplace-listing-submit-button"]',
     'button[aria-label*="نشر"]',
-    'button[aria-label*="Publish"]'
+    'button[aria-label*="Publish"]',
+    'button[aria-label*="Post"]',
+    'div[role="button"][aria-label*="نشر"]',
+    'div[role="button"][aria-label*="Publish"]'
   ];
   
+  // محاولة الـ selectors العادية
   for (const selector of publishSelectors) {
     const button = document.querySelector(selector);
-    if (button && !button.disabled) {
+    if (button && !button.disabled && button.offsetParent !== null) {
+      button.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      await sleep(500);
       button.click();
-      console.log('تم النقر على زر النشر');
+      console.log('✅ تم النقر على زر النشر:', selector);
       return true;
     }
   }
   
-  // البحث بالنص
-  const buttons = document.querySelectorAll('button');
-  for (const button of buttons) {
-    const text = button.textContent.trim().toLowerCase();
-    if (text.includes('نشر') || text.includes('publish') || text.includes('post')) {
-      if (!button.disabled) {
-        button.click();
-        console.log('تم النقر على زر النشر (بالنص)');
-        return true;
-      }
+  // البحث بـ XPath
+  const xpathQueries = [
+    "//button[contains(text(), 'نشر') or contains(text(), 'Publish') or contains(text(), 'Post')]",
+    "//div[@role='button' and (contains(text(), 'نشر') or contains(text(), 'Publish'))]",
+    "//button[@type='submit']",
+    "//button[contains(@aria-label, 'نشر') or contains(@aria-label, 'Publish')]"
+  ];
+  
+  for (const xpath of xpathQueries) {
+    const button = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+    if (button && !button.disabled && button.offsetParent !== null) {
+      button.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      await sleep(500);
+      button.click();
+      console.log('✅ تم النقر على زر النشر بـ XPath');
+      return true;
     }
   }
   
-  console.warn('لم يتم العثور على زر النشر');
+  // البحث في جميع الأزرار بالنص
+  const buttons = document.querySelectorAll('button, div[role="button"]');
+  for (const button of buttons) {
+    const text = button.textContent.trim().toLowerCase();
+    const ariaLabel = (button.getAttribute('aria-label') || '').toLowerCase();
+    
+    if ((text.includes('نشر') || text.includes('publish') || text.includes('post') ||
+         ariaLabel.includes('نشر') || ariaLabel.includes('publish') || ariaLabel.includes('post')) &&
+        !button.disabled && button.offsetParent !== null) {
+      
+      button.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      await sleep(500);
+      button.click();
+      console.log('✅ تم النقر على زر النشر (بالنص):', text || ariaLabel);
+      return true;
+    }
+  }
+  
+  console.warn('❌ لم يتم العثور على زر النشر');
+  
+  // محاولة أخيرة - البحث عن أي زر submit
+  const submitButton = document.querySelector('button[type="submit"]:not([disabled])');
+  if (submitButton && submitButton.offsetParent !== null) {
+    submitButton.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    await sleep(500);
+    submitButton.click();
+    console.log('✅ تم النقر على زر submit');
+    return true;
+  }
+  
+  return false;
+}
+
+// التحقق من نجاح النشر
+async function verifyPublishSuccess() {
+  console.log('🔍 التحقق من نجاح النشر...');
+  
+  // البحث عن علامات نجاح النشر
+  const successIndicators = [
+    // رسائل النجاح
+    "//div[contains(text(), 'تم نشر') or contains(text(), 'Published') or contains(text(), 'posted')]",
+    "//div[contains(text(), 'success') or contains(text(), 'نجح')]",
+    
+    // تغيير في URL
+    () => window.location.href.includes('marketplace') && !window.location.href.includes('create'),
+    
+    // اختفاء نموذج النشر
+    () => !document.querySelector('form') || document.querySelectorAll('input, textarea').length < 3,
+    
+    // ظهور صفحة جديدة
+    () => document.querySelector('[data-testid="marketplace-listing-title"]') !== null
+  ];
+  
+  // انتظار لمدة 10 ثواني للتحقق من النجاح
+  for (let i = 0; i < 20; i++) {
+    // فحص XPath indicators
+    for (let j = 0; j < 2; j++) {
+      const xpath = successIndicators[j];
+      const element = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+      if (element) {
+        console.log('✅ تم العثور على مؤشر نجاح النشر');
+        return true;
+      }
+    }
+    
+    // فحص function indicators
+    for (let j = 2; j < successIndicators.length; j++) {
+      const checkFunction = successIndicators[j];
+      if (typeof checkFunction === 'function' && checkFunction()) {
+        console.log('✅ تم التحقق من نجاح النشر');
+        return true;
+      }
+    }
+    
+    await sleep(500);
+  }
+  
+  console.warn('❌ لم يتم التأكد من نجاح النشر');
   return false;
 }
 
