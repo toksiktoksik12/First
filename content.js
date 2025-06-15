@@ -1,8 +1,12 @@
 // Content Script for Facebook Marketplace Auto Reposter
 
-// متغيرات عامة
-let isExtractingListings = false;
-let extractedListings = [];
+// متغيرات عامة - تجنب التكرار
+if (typeof window.isExtractingListings === 'undefined') {
+  window.isExtractingListings = false;
+}
+if (typeof window.extractedListings === 'undefined') {
+  window.extractedListings = [];
+}
 
 // الاستماع للرسائل من background script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -22,8 +26,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 async function extractListings() {
   try {
     console.log('بدء استخراج الإعلانات...');
-    isExtractingListings = true;
-    extractedListings = [];
+    window.isExtractingListings = true;
+    window.extractedListings = [];
     
     // انتظار تحميل الصفحة
     await waitForPageLoad();
@@ -53,7 +57,7 @@ async function extractListings() {
       try {
         const listing = await extractListingData(element);
         if (listing) {
-          extractedListings.push(listing);
+          window.extractedListings.push(listing);
         }
       } catch (error) {
         console.error(`خطأ في استخراج الإعلان ${i}:`, error);
@@ -63,18 +67,18 @@ async function extractListings() {
       await sleep(500);
     }
     
-    console.log(`تم استخراج ${extractedListings.length} إعلان بنجاح`);
-    isExtractingListings = false;
+    console.log(`تم استخراج ${window.extractedListings.length} إعلان بنجاح`);
+    window.isExtractingListings = false;
     
     return { 
       success: true, 
-      listings: extractedListings,
-      count: extractedListings.length 
+      listings: window.extractedListings,
+      count: window.extractedListings.length 
     };
     
   } catch (error) {
     console.error('خطأ في استخراج الإعلانات:', error);
-    isExtractingListings = false;
+    window.isExtractingListings = false;
     return { success: false, error: error.message };
   }
 }
@@ -188,20 +192,42 @@ async function fillListingForm(listing) {
   try {
     console.log('بدء ملء النموذج للإعلان:', listing.title);
     
-    // انتظار تحميل النموذج
-    await waitForElement('input[placeholder*="title"], input[placeholder*="عنوان"], [data-testid="marketplace-composer-title-input"]', 10000);
+    // انتظار تحميل النموذج - البحث عن أي حقل إدخال
+    console.log('🔍 البحث عن نموذج النشر...');
     
-    // ملء العنوان
+    // انتظار أطول وبحث أوسع
+    await waitForElement('input, textarea, form', 15000);
+    
+    // طباعة جميع الحقول المتاحة للتشخيص
+    const allInputs = document.querySelectorAll('input, textarea');
+    console.log('📋 الحقول المتاحة:', allInputs.length);
+    allInputs.forEach((input, index) => {
+      console.log(`${index}: ${input.tagName} - placeholder: "${input.placeholder}" - type: "${input.type}"`);
+    });
+    
+    // ملء العنوان - محاولة أكثر مرونة
     console.log('📝 ملء العنوان:', listing.title);
-    await fillField([
+    
+    // البحث عن حقل العنوان بطرق متعددة
+    const titleSelectors = [
+      // Facebook selectors
       'input[placeholder*="title"]',
+      'input[placeholder*="Title"]', 
       'input[placeholder*="عنوان"]',
-      'input[placeholder*="Title"]',
-      '[data-testid="marketplace-composer-title-input"]',
+      'input[placeholder*="What are you selling"]',
+      'input[placeholder*="ما الذي تبيعه"]',
+      '[data-testid*="title"]',
+      '[data-testid*="marketplace"]',
       '[aria-label*="title"]',
+      '[aria-label*="Title"]',
       '[aria-label*="عنوان"]',
-      'input[type="text"]:first-of-type:not([readonly]):not([disabled])'
-    ], listing.title);
+      // عام
+      'input[type="text"]:not([readonly]):not([disabled]):not([style*="display: none"])',
+      'form input[type="text"]:first-of-type',
+      'div[role="main"] input[type="text"]:first-of-type'
+    ];
+    
+    await fillField(titleSelectors, listing.title);
     
     await sleep(1000);
     
@@ -287,19 +313,33 @@ async function fillListingForm(listing) {
 async function fillField(selectors, value) {
   if (!value) return false;
   
+  console.log(`🔍 البحث عن حقل لملء: "${value.substring(0, 30)}..."`);
+  
   // محاولة الـ selectors العادية أولاً
-  for (const selector of selectors) {
+  for (let i = 0; i < selectors.length; i++) {
+    const selector = selectors[i];
+    console.log(`🔎 محاولة ${i + 1}/${selectors.length}: ${selector}`);
+    
     const element = document.querySelector(selector);
     if (element && element.offsetParent !== null) { // التأكد من أن العنصر مرئي
+      console.log(`✅ تم العثور على العنصر المرئي: ${selector}`);
+      console.log(`📝 نوع العنصر: ${element.tagName}, placeholder: "${element.placeholder}"`);
+      
       await fillFieldElement(element, value);
       console.log(`✅ تم ملء الحقل: ${selector} = ${value}`);
       return true;
+    } else if (element) {
+      console.log(`⚠️ العنصر موجود لكن غير مرئي: ${selector}`);
+    } else {
+      console.log(`❌ لم يتم العثور على: ${selector}`);
     }
   }
   
   // محاولة البحث بـ XPath للحقول الشائعة
+  console.log('🔄 محاولة البحث بـ XPath...');
   const xpathQueries = [
     "//input[contains(@placeholder, 'title') or contains(@placeholder, 'عنوان')]",
+    "//input[contains(@placeholder, 'What are you selling')]",
     "//textarea[contains(@placeholder, 'description') or contains(@placeholder, 'وصف')]", 
     "//input[@type='number' or contains(@placeholder, 'price') or contains(@placeholder, 'سعر')]",
     "//input[contains(@placeholder, 'location') or contains(@placeholder, 'موقع')]",
@@ -308,15 +348,34 @@ async function fillField(selectors, value) {
   ];
   
   for (const xpath of xpathQueries) {
+    console.log(`🔎 XPath: ${xpath}`);
     const element = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
     if (element && element.offsetParent !== null) {
+      console.log(`✅ تم العثور على عنصر بـ XPath`);
       await fillFieldElement(element, value);
       console.log(`✅ تم ملء الحقل بـ XPath: ${value}`);
       return true;
     }
   }
   
-  console.warn('❌ لم يتم العثور على الحقل:', selectors, 'للقيمة:', value);
+  // إذا لم نجد أي حقل، نحاول البحث بطريقة أخرى
+  console.log('🔄 محاولة البحث بطريقة بديلة...');
+  const allVisibleInputs = Array.from(document.querySelectorAll('input, textarea'))
+    .filter(el => el.offsetParent !== null && !el.disabled && !el.readOnly);
+  
+  console.log(`📋 عدد الحقول المرئية: ${allVisibleInputs.length}`);
+  
+  if (allVisibleInputs.length > 0) {
+    console.log('🎯 محاولة استخدام أول حقل مرئي...');
+    const firstInput = allVisibleInputs[0];
+    console.log(`📝 استخدام: ${firstInput.tagName} - placeholder: "${firstInput.placeholder}"`);
+    
+    await fillFieldElement(firstInput, value);
+    console.log(`✅ تم ملء الحقل البديل بنجاح`);
+    return true;
+  }
+  
+  console.warn('❌ لم يتم العثور على أي حقل مناسب:', selectors, 'للقيمة:', value);
   return false;
 }
 

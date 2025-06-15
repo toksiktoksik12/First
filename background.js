@@ -92,23 +92,45 @@ async function handleRepostListing(request, sender, sendResponse) {
       repostInProgress: true
     });
     
-    // انتظار تحميل الصفحة مع timeout
-    await new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        chrome.tabs.onUpdated.removeListener(listener);
-        reject(new Error('انتهت مهلة انتظار تحميل الصفحة'));
-      }, 15000); // 15 ثانية timeout
-      
-      function listener(tabId, info) {
-        if (tabId === tab.id && info.status === 'complete') {
-          clearTimeout(timeout);
+    // انتظار تحميل الصفحة مع timeout ومعالجة أخطاء
+    try {
+      await new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
           chrome.tabs.onUpdated.removeListener(listener);
-          setTimeout(resolve, 3000); // انتظار أطول للتأكد من تحميل العناصر
+          reject(new Error('انتهت مهلة انتظار تحميل الصفحة'));
+        }, 20000); // 20 ثانية timeout
+        
+        function listener(tabId, info) {
+          if (tabId === tab.id && info.status === 'complete') {
+            clearTimeout(timeout);
+            chrome.tabs.onUpdated.removeListener(listener);
+            setTimeout(resolve, 5000); // انتظار أطول للتأكد من تحميل العناصر
+          }
         }
-      }
-      
-      chrome.tabs.onUpdated.addListener(listener);
-    });
+        
+        chrome.tabs.onUpdated.addListener(listener);
+        
+        // فحص فوري إذا كانت الصفحة محملة بالفعل
+        chrome.tabs.get(tab.id, (currentTab) => {
+          if (chrome.runtime.lastError) {
+            clearTimeout(timeout);
+            chrome.tabs.onUpdated.removeListener(listener);
+            reject(new Error('التاب لم يعد موجوداً'));
+            return;
+          }
+          
+          if (currentTab.status === 'complete') {
+            clearTimeout(timeout);
+            chrome.tabs.onUpdated.removeListener(listener);
+            setTimeout(resolve, 5000);
+          }
+        });
+      });
+    } catch (error) {
+      console.error('Error waiting for page load:', error);
+      sendResponse({ success: false, error: error.message });
+      return;
+    }
     
     // التحقق من وجود التاب
     const tabExists = await checkTabExists(tab.id);
