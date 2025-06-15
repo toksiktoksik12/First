@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <title>Facebook Marketplace Reposter</title>
+  <style>
+    body {
+      width: 400px;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      background: #1877f2;
+      color: white;
+    }
+    
+    h1 {
+      text-align: center;
+      margin: 0 0 20px 0;
+      font-size: 18px;
+    }
+    
+    button {
+      width: 100%;
+      padding: 15px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      background: #42b883;
+      color: white;
+    }
+    
+    button:hover {
+      background: #369870;
+    }
+    
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    
+    #status {
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 8px;
+      text-align: center;
+      background: rgba(255,255,255,0.1);
+    }
+    
+    #listings {
+      max-height: 300px;
+      overflow-y: auto;
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 10px;
+      margin-top: 10px;
+    }
+    
+    .listing {
+      background: rgba(255,255,255,0.2);
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 5px;
+    }
+    
+    .listing h3 {
+      margin: 0 0 5px 0;
+      font-size: 14px;
+    }
+    
+    .listing p {
+      margin: 3px 0;
+      font-size: 12px;
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔄 Facebook Marketplace Reposter</h1>
+  
+  <button id="extractBtn">🔍 استخراج الإعلانات</button>
+  
+  <div id="status">اضغط "استخراج الإعلانات" للبدء</div>
+  
+  <div id="listings"></div>
+  
+  <script>
+    console.log('🚀 Popup loaded - WORKING VERSION');
+    
+    document.getElementById('extractBtn').addEventListener('click', async function() {
+      const btn = this;
+      const status = document.getElementById('status');
+      const listings = document.getElementById('listings');
+      
+      btn.disabled = true;
+      btn.textContent = 'جاري الاستخراج...';
+      status.textContent = 'جاري استخراج الإعلانات...';
+      listings.innerHTML = '';
+      
+      try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        console.log('📋 التاب:', tab.url);
+        
+        if (!tab.url.includes('facebook.com')) {
+          throw new Error('يجب أن تكون في صفحة Facebook');
+        }
+        
+        console.log('📤 إرسال رسالة...');
+        const response = await chrome.tabs.sendMessage(tab.id, { action: 'extractListings' });
+        console.log('📨 الرد:', response);
+        
+        if (response && response.success) {
+          const extractedListings = response.listings || [];
+          
+          if (extractedListings.length > 0) {
+            status.textContent = `تم استخراج ${extractedListings.length} إعلان ✅`;
+            
+            extractedListings.forEach((listing, index) => {
+              const div = document.createElement('div');
+              div.className = 'listing';
+              div.innerHTML = `
+                <h3>${listing.title}</h3>
+                <p><strong>السعر:</strong> ${listing.price || 'غير محدد'}</p>
+                <p><strong>الصور:</strong> ${listing.images.length} صورة</p>
+                <p><strong>الرابط:</strong> <a href="${listing.url}" target="_blank" style="color: #ffeb3b;">عرض</a></p>
+              `;
+              listings.appendChild(div);
+            });
+          } else {
+            status.textContent = 'لم يتم العثور على إعلانات';
+          }
+        } else {
+          throw new Error(response?.error || response?.message || 'فشل في الاستخراج');
+        }
+        
+      } catch (error) {
+        console.error('❌ خطأ:', error);
+        status.textContent = `خطأ: ${error.message}`;
+      }
+      
+      btn.disabled = false;
+      btn.textContent = '🔍 استخراج الإعلانات';
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+{
+  "manifest_version": 3,
+  "name": "Facebook Marketplace Reposter - WORKING",
+  "version": "2.0.0",
+  "description": "إعادة نشر إعلانات Facebook Marketplace - إصدار يعمل",
+  
+  "permissions": [
+    "activeTab",
+    "storage",
+    "tabs"
+  ],
+  
+  "host_permissions": [
+    "https://web.facebook.com/*",
+    "https://facebook.com/*",
+    "https://*.facebook.com/*"
+  ],
+  
+  "background": {
+    "service_worker": "background.js"
+  },
+  
+  "content_scripts": [
+    {
+      "matches": [
+        "https://web.facebook.com/*",
+        "https://facebook.com/*"
+      ],
+      "js": ["content-working.js"],
+      "run_at": "document_end"
+    }
+  ],
+  
+  "action": {
+    "default_popup": "popup-working.html",
+    "default_title": "Facebook Marketplace Reposter"
+  }
+}
