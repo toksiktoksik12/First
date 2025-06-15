@@ -5,9 +5,34 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'extractListings') {
     console.log('📥 استلام طلب استخراج');
     
-    // البحث البسيط
-    const links = document.querySelectorAll('a[href*="/marketplace/item/"]');
-    console.log(`🔍 عدد الروابط: ${links.length}`);
+    // البحث الموسع - كل أنواع الإعلانات
+    const selectors = [
+      'a[href*="/marketplace/item/"]',
+      'a[href*="marketplace"][href*="item"]',
+      'a[role="link"][href*="facebook.com"]',
+      'div[role="article"] a',
+      '[data-pagelet*="marketplace"] a',
+      '[data-pagelet*="MarketplaceSearchResults"] a'
+    ];
+    
+    let allLinks = [];
+    selectors.forEach(selector => {
+      const found = document.querySelectorAll(selector);
+      console.log(`🔍 ${selector}: ${found.length} روابط`);
+      allLinks.push(...found);
+    });
+    
+    // فلترة الروابط للإعلانات فقط
+    const links = Array.from(allLinks).filter(link => 
+      link.href && (
+        link.href.includes('/marketplace/item/') ||
+        link.href.includes('marketplace') ||
+        link.closest('[data-pagelet*="marketplace"]') ||
+        link.closest('div[role="article"]')
+      )
+    );
+    
+    console.log(`🎯 إجمالي الروابط المفلترة: ${links.length}`);
     
     const listings = [];
     const seenUrls = new Set(); // منع التكرار
@@ -43,11 +68,33 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                    link.closest('div');
       
       if (parent) {
-        // البحث عن السعر
+        // البحث عن السعر بطرق متعددة
         const priceText = parent.textContent;
-        const priceMatch = priceText.match(/ج\.م\.?\s*([\d,]+)/);
-        if (priceMatch) {
-          listing.price = priceMatch[1];
+        
+        // البحث عن أسعار مختلفة
+        const pricePatterns = [
+          /ج\.م\.?\s*([\d,]+)/,           // ج.م. 1,000
+          /([\d,]+)\s*ج\.م/,             // 1,000 ج.م
+          /([\d,]+)\s*جنيه/,             // 1,000 جنيه
+          /EGP\s*([\d,]+)/,              // EGP 1,000
+          /([\d,]+)\s*EGP/,              // 1,000 EGP
+          /\$\s*([\d,]+)/,               // $ 1,000
+          /([\d,]+)\s*\$/                // 1,000 $
+        ];
+        
+        for (const pattern of pricePatterns) {
+          const match = priceText.match(pattern);
+          if (match) {
+            listing.price = match[1];
+            break;
+          }
+        }
+        
+        // إذا مش لاقي سعر، شوف لو مكتوب مجاني
+        if (listing.price === 'غير محدد') {
+          if (priceText.includes('مجاني') || priceText.includes('Free') || priceText.includes('مجانا')) {
+            listing.price = 'مجاني';
+          }
         }
         
         // البحث عن الصور
@@ -72,7 +119,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       
       listings.push(listing);
-      console.log(`✅ إعلان ${listings.length}: ${listing.title} - ${listing.price}`);
+      console.log(`✅ إعلان ${listings.length}:`);
+      console.log(`   العنوان: ${listing.title}`);
+      console.log(`   السعر: ${listing.price}`);
+      console.log(`   الصور: ${listing.images.length}`);
+      console.log(`   الرابط: ${listing.url.substring(0, 50)}...`);
     }
     
     console.log(`🎉 تم استخراج ${listings.length} إعلان`);

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { width: 400px; padding: 20px; font-family: Arial; background: #f0f2f5; }
+    h2 { color: #1877f2; text-align: center; margin-bottom: 20px; }
+    button { width: 100%; padding: 15px; margin: 10px 0; border: none; border-radius: 8px; background: #1877f2; color: white; font-size: 16px; cursor: pointer; font-weight: bold; }
+    button:hover { background: #166fe5; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+    #status { padding: 15px; margin: 10px 0; background: white; border-radius: 8px; border-left: 4px solid #1877f2; }
+    #result { margin-top: 15px; max-height: 400px; overflow-y: auto; }
+    .listing { background: white; margin: 10px 0; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .listing h4 { margin: 0 0 10px 0; color: #1877f2; }
+    .listing p { margin: 5px 0; color: #65676b; }
+    .listing a { color: #1877f2; text-decoration: none; }
+    .listing a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <h2>🔄 Facebook Marketplace</h2>
+  <p style="text-align: center; color: #65676b; margin-bottom: 20px;">الحل النهائي مع scroll تلقائي</p>
+  
+  <button id="extractBtn">🚀 استخراج مع Scroll</button>
+  
+  <div id="status">اضغط الزر للبدء - سيتم عمل scroll تلقائي</div>
+  
+  <div id="result"></div>
+  
+  <script>
+    document.getElementById('extractBtn').onclick = async function() {
+      const btn = this;
+      const status = document.getElementById('status');
+      const result = document.getElementById('result');
+      
+      btn.disabled = true;
+      btn.textContent = 'جاري العمل...';
+      status.innerHTML = '📜 جاري عمل scroll وتحميل الإعلانات...';
+      result.innerHTML = '';
+      
+      try {
+        const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+        
+        if (!tab.url.includes('facebook.com')) {
+          throw new Error('يجب أن تكون في صفحة Facebook Marketplace');
+        }
+        
+        status.innerHTML = '⏳ جاري الاستخراج... قد يستغرق 10 ثوان';
+        
+        const response = await chrome.tabs.sendMessage(tab.id, { action: 'extractListings' });
+        
+        if (response && response.success) {
+          if (response.count > 0) {
+            status.innerHTML = `🎉 تم استخراج ${response.count} إعلان بنجاح!`;
+            
+            response.listings.forEach(listing => {
+              const div = document.createElement('div');
+              div.className = 'listing';
+              div.innerHTML = `
+                <h4>${listing.title}</h4>
+                <p><strong>💰 السعر:</strong> ${listing.price}</p>
+                <p><strong>📸 الصور:</strong> ${listing.images.length} صورة</p>
+                <p><a href="${listing.url}" target="_blank">🔗 عرض الإعلان</a></p>
+              `;
+              result.appendChild(div);
+            });
+          } else {
+            status.innerHTML = '⚠️ لم يتم العثور على إعلانات. تأكد من أنك في صفحة Marketplace';
+          }
+        } else {
+          throw new Error(response?.error || 'فشل في الاستخراج');
+        }
+        
+      } catch (error) {
+        console.error('خطأ:', error);
+        status.innerHTML = `❌ خطأ: ${error.message}`;
+      }
+      
+      btn.disabled = false;
+      btn.textContent = '🚀 استخراج مع Scroll';
+    };
+  </script>
+</body>
+</html>
